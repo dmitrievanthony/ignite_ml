@@ -13,16 +13,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
+"""Clusterer.
+"""
+
 from ..common/UnsupervisedTrainer
 
 class Cluster(UnsupervisedTrainer):
+    """Clusterer.
+    """
+    pass
+
+class GMMClusterer(Clusterer):
 
     def __init__(self, env_builder=None, label_converter=None):
         super(Classifier, self).__init__(env_builder, label_converter)
 
-class GMMClusterer(Clusterer):
-    pass
+    def fit(self, data, feature_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
 
 class KMeansClusterer(Clusterer):
-    pass
+
+    def __init__(self, env_builder=None, label_converter=None):
+        super(Classifier, self).__init__(env_builder, label_converter)
+
+    def fit(self, data, feature_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
 

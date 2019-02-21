@@ -40,6 +40,15 @@ class DecisionTreeRegressor(Regressor):
         """
         pass
 
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
+
 class KNNRegressor(Regressor):
     """KNN Regressor.
     """
@@ -53,6 +62,15 @@ class KNNRegressor(Regressor):
         """
         pass
 
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
+
 class LinearRegressor(Regressor):
     """Linear Regressor.
     """
@@ -64,6 +82,15 @@ class LinearRegressor(Regressor):
         env_builder : Environment builder.
         label_converter : Label converter.
         """
+        pass
+
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
         pass
 
 class RandomForestRegressor(Regressor):
@@ -87,4 +114,13 @@ class RandomForestRegressor(Regressor):
         nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
         seed : Seed.
         """
+        pass
+
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
         pass

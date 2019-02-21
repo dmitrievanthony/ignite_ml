@@ -41,6 +41,15 @@ class ANNClassifier(Classifier):
         """
         pass
 
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
+
 class DecisionTreeClassifier(Classifier):
     """Decision Tree Classifier.
     """
@@ -59,6 +68,15 @@ class DecisionTreeClassifier(Classifier):
         """
         pass
 
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
+
 class KNNClassifier(Classifier):
     """KNN Classifier.
     """
@@ -70,6 +88,15 @@ class KNNClassifier(Classifier):
         env_builder : Environment builder.
         label_converter : Label converter.
         """
+        pass
+
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
         pass
 
 class LogRegClassifier(Classifier):
@@ -92,6 +119,15 @@ class LogRegClassifier(Classifier):
         """
         pass
 
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
+        pass
+
 class RandomForestClassifier(Classifier):
     """Random Forest Classifier.
     """
@@ -111,4 +147,13 @@ class RandomForestClassifier(Classifier):
         min_impurity_delta : Min impurity delta.
         features_count_selection_strategy : Features count selection strategy.
         """
+        pass
+
+    def fit(self, data, feature_extractor, label_extractor):
+        pass
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        pass
+
+    def is_updatable(mdl)
         pass
