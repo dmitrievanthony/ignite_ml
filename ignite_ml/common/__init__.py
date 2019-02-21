@@ -25,11 +25,8 @@ class SupervisedTrainer:
 
         Parameters
         ----------
-
         data : Apache Ignite cache.
-
         feature_extractor : Feature extractor.
-
         label_extractor : Label extractor.
         """
         pass
@@ -40,13 +37,9 @@ class SupervisedTrainer:
 
         Parameters
         ----------
-
         mdl : Model.
-
         data : Apache Ignite cache.
-
         feature_extractor : Feature extractor.
-
         label_extractor : Label extractor.
         """
         pass
@@ -57,7 +50,6 @@ class SupervisedTrainer:
 
         Parameters
         ----------
-
         mdl : Model.
         """
         pass
@@ -71,9 +63,7 @@ class UnsupervisedTrainer:
 
         Parameters
         ----------
-
         data : Apache Ignite cache.
-
         feature_extractor : Feature extractor.
         """
         pass
@@ -84,11 +74,8 @@ class UnsupervisedTrainer:
 
         Parameters
         ----------
-
         mdl : Model.
-
         data : Apache Ignite cache.
-
         feature_extractor : Feature extractor.
         """
         pass
@@ -99,7 +86,6 @@ class UnsupervisedTrainer:
 
         Parameters
         ----------
-
         mdl : Model.
         """
         pass

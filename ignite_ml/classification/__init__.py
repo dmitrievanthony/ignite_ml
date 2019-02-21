@@ -32,17 +32,11 @@ class ANNClassifier(Classifier):
 
         Parameters
         ----------
-    
         env_builder : Environment builder.
-
         label_converter : Label converter.
-
         k : Number of clusters.
-
         max_iter : Max number of iterations.
-
         epsilon : Epsilon, delta of convergence.
-
         distance : Distance measure.
         """
         pass
@@ -56,17 +50,11 @@ class DecisionTreeClassifier(Classifier):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
- 
         max_deep : Max deep.
-
         min_impurity_decrease : Min impurity decrease.
-
         compressor : Compressor.
-
         use_index : Use index.
         """
         pass
@@ -79,9 +67,7 @@ class KNNClassifier(Classifier):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
         """
         pass
@@ -96,19 +82,12 @@ class LogRegClassifier(Classifier):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
-
         max_iter : Max number of iterations.
-
         batch_size : Batch size.
-
         max_loc_iter : Max number of local iterations.
-
         update_strategy : Update strategy.
-
         seed : Seed.
         """
         pass
@@ -124,19 +103,12 @@ class RandomForestClassifier(Classifier):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
-
         trees : Number of trees.
-
         sub_sample_size : Sub sample size.
-
         max_depth : Max depth.
-
         min_impurity_delta : Min impurity delta.
-
         features_count_selection_strategy : Features count selection strategy.
         """
         pass

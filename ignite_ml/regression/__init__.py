@@ -32,10 +32,11 @@ class DecisionTreeRegressor(Regressor):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
+        max_deep : Max deep.
+        min_impurity_decrease : Min impurity decrease.
+        compressor : Compressor.
         """
         pass
 
@@ -47,9 +48,7 @@ class KNNRegressor(Regressor):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
         """
         pass
@@ -62,9 +61,7 @@ class LinearRegressor(Regressor):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
         """
         pass
@@ -80,9 +77,14 @@ class RandomForestRegressor(Regressor):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
+        trees : Number of trees.
+        sub_sample_size : Sub sample size.
+        max_depth : Max depth.
+        min_impurity_delta : Min impurity delta.
+        feature_count_selection_strategy : Feature count selection strategy.
+        nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
+        seed : Seed.
         """
         pass

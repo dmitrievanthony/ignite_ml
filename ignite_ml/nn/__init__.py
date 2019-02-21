@@ -24,23 +24,14 @@ class MLP(SupervisedTrainer):
 
         Parameters
         ----------
-
         env_builder : Environment builder.
-
         label_converter : Label converter.
-
         arch : Architecture.
-
         loss : Loss.
-
         update_strategy : Update strategy.
-
         max_iter : Max number of iterations.
-
         batch_size : Batch size.
-
         max_loc_iter : Max number of local iterations.
-
         seed : Seed.
         """
         pass
