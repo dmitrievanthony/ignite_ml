@@ -44,16 +44,6 @@ class SupervisedTrainer:
         """
         pass
 
-    @abstractmethod
-    def is_updatable(mdl)
-        """Checks if model is updatable.
-
-        Parameters
-        ----------
-        mdl : Model.
-        """
-        pass
-
 class UnsupervisedTrainer:
     """Unsupervised trainer.
     """
@@ -80,12 +70,45 @@ class UnsupervisedTrainer:
         """
         pass
 
-    @abstractmethod
-    def is_updatable(mdl)
-        """Checks if model is updatable.
-
-        Parameters
-        ----------
-        mdl : Model.
+class IgniteBiFunction:
+    """IgniteBiFunction wrapper.
+    """
+    def __init__(self, lambda_function):
+        """Constructs a new instance of IgniteBiFunction wrapper.
         """
-        pass
+        self.gateway = gateway
+        self.lambda_function = lambda_function
+
+    def apply(self, a, b):
+        """Apply.
+        """
+        return self.lambda_function(a, b)
+
+    def andThen(self, after):
+        """And then.
+        """
+        return IgniteBiFunction(lambda k, v: after.apply(self.apply(k, v)))
+
+    class Java:
+        """Java.
+        """
+        implements = ["org.apache.ignite.ml.math.functions.IgniteBiFunction"]
+
+class IgniteFunction:
+    """IgniteFunction wrapper.
+    """
+    def __init__(self, lambda_function):
+        """Constructs a new instance of IgniteFunction wrapper.
+        """
+        self.gateway = gateway
+        self.lambda_function = lambda_function
+
+    def andThen(self, after):
+        """And then.
+        """
+        return IgniteFunction(lambda v: after.apply(self.apply(v))
+
+    class Java:
+        """Java.
+        """
+        implements = ["org.apache.ignite.ml.math.functions.IgniteFunction"]

@@ -18,36 +18,56 @@
 
 from ..common/UnsupervisedTrainer
 
-class Cluster(UnsupervisedTrainer):
-    """Clusterer.
+class ClusteringTrainer(UnsupervisedTrainer):
+    """Clustering trainer.
     """
-    pass
-
-class GMMClusterer(Clusterer):
-
-    def __init__(self, env_builder=None, label_converter=None):
-        super(Classifier, self).__init__(env_builder, label_converter)
+    def __init__(self, proxy):
+        """Constructs a new instance of ClusteringTrainer.
+        """
+        self.proxy = proxy
 
     def fit(self, data, feature_extractor):
-        pass
+        return self.proxy.fit(data,
+                              IgniteBiFunction(feature_extractor))
 
     def update(self, mdl, data, feature_extractor):
-        pass
+        return self.proxy.fit(mdl,
+                              data,
+                              IgniteBiFunction(feature_extractor))
 
-    def is_updatable(mdl)
-        pass
+class GMMClusteringTrainer(ClusteringTrainer):
+    """GMM clustring trainer.
+    """
+    def __init__(self, env_builder=None, label_converter=None, count_of_components,
+                 max_iter, initial_means, eps, max_init_tries):
+        """Constructs a new instance of GMM clustring trainer.
 
-class KMeansClusterer(Clusterer):
+        Parameters
+        ----------
+        env_builder : Environment builder.
+        label_extractor : Label extractor.
+        count_of_components : Count of components.
+        max_iter : Max number of iterations.
+        initial_means : Initial means.
+        eps : Epsilon.
+        max_init_tries : Max init tries.
+        """
+        ClusteringTrainer.__init__(None)
 
-    def __init__(self, env_builder=None, label_converter=None):
-        super(Classifier, self).__init__(env_builder, label_converter)
+class KMeansClusteringTrainer(ClusteringTrainer):
+    """KMeans clustring trainer.
+    """
+    def __init__(self, env_builder=None, label_converter=None, amount_of_clusters,
+                 max_iter, eps, distance):
+        """Constructs a new instance of KMeans clustering trainer.
 
-    def fit(self, data, feature_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
+        Parameters
+        ----------
+        env_builder : Environment builder.
+        label_converter : Label converter.
+        amount_of_clusters : Amount of clusters.
+        max_iter : Max number of iterations.
+        eps : Epsilon.
+        distance : Distance measure.
+        """
+        ClusteringTrainer.__init__(None)

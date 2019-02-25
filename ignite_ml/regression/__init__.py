@@ -17,18 +17,31 @@
 """
 
 from ..common import SupervisedTrainer
+from ..common import IgniteBiFunction
 
-class Regressor(SupervisedTrainer):
+class RegressionTrainer(SupervisedTrainer):
     """Regression.
     """
-    pass
+    def __init__(self, proxy):
+        self.proxy = proxy
 
-class DecisionTreeRegressor(Regressor):
-    """Decision Tree Regressor.
+    def fit(self, data, feature_extractor, label_extractor):
+        return self.proxy.fit(data,
+                              IgniteBiFunction(feature_extractor),
+                              IgniteBiFunction(label_extractor))
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        return self.proxy.update(mdl,
+                                 data,
+                                 IgniteBiFunction(feature_extractor),
+                                 IgniteBiFunction(label_extractor))
+
+class DecisionTreeRegressionTrainer(RegressionTrainer):
+    """DecisionTree regression trainer.
     """
     def __init__(self, env_builder=None, label_converter=None, max_deep=None,
                  min_impurity_decrease=None, compressor=None, use_index=True):
-        """Decision Tree Regressor.
+        """Constructs a new instance of DecisionTree regression trainer.
 
         Parameters
         ----------
@@ -38,69 +51,42 @@ class DecisionTreeRegressor(Regressor):
         min_impurity_decrease : Min impurity decrease.
         compressor : Compressor.
         """
-        pass
+        RegressionTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class KNNRegressor(Regressor):
-    """KNN Regressor.
+class KNNRegressionTrainer(RegressionTrainer):
+    """KNN regression trainer.
     """
     def __init__(self, env_builder=None, label_converter=None):
-        """KNN Regressor.
+        """Constructs a new instance of linear regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
         label_converter : Label converter.
         """
-        pass
+        RegressionTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class LinearRegressor(Regressor):
-    """Linear Regressor.
+class LinearRegressionTrainer(RegressionTrainer):
+    """Linear regression trainer.
     """
     def __init__(self, env_builder=None, label_converter=None):
-        """Linear Regressor.
+        """Constructs a new instance of linear regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
         label_converter : Label converter.
         """
-        pass
+        RegressionTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class RandomForestRegressor(Regressor):
-    """Random Forest Regressor.
+class RandomForestRegressionTrainer(RegressionTrainer):
+    """RandomForest regression trainer.
     """
     def __init__(self, env_builder=None, label_converter=None,
                   trees=None, sub_sample_size=None, max_depth=None,
                   min_impurity_delta=None, features_count_selection_strategy=None,
                   nodes_to_learn_selection_strategy=None, seed=None):
-        """Random Forest Regressor
+        """Constructs a new instance of RandomForest regression trainer.
 
         Parameters
         ----------
@@ -114,13 +100,25 @@ class RandomForestRegressor(Regressor):
         nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
         seed : Seed.
         """
-        pass
+        RegressionTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
+class MLPRegressionTrainer(RegressionTrainer):
+    """MLP regression trainer.
+    """
+    def __init__(self, env_builder=None, label_converter=None, arch, loss,
+                 update_strategy, max_iter, batch_size, max_loc_iter, seed):
+        """Constructs a new instance of MLP regression trainer.
 
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
+        Parameters
+        ----------
+        env_builder : Environment builder.
+        label_converter : Label converter.
+        arch : Architecture.
+        loss : Loss function.
+        update_strategy : Update strategy.
+        max_iter : Max number of iterations.
+        batch_size : Batch size.
+        max_loc_iter : Max number of local iterations.
+        seed : Seed.
+        """
+        RegressionTrainer.__init__(None)

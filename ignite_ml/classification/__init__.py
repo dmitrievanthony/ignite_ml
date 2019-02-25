@@ -17,18 +17,37 @@
 """
 
 from ..common import SupervisedTrainer
+from ..common import IgniteBiFunction
 
-class Classifier(SupervisedTrainer):
-    """Classifier.
+class ClassificationTrainer(SupervisedTrainer):
+    """Classification trainer.
     """
-    pass
+    def __init__(self, proxy):
+        """Constructs a new instance of classification trainer.
+        """
+        self.proxy = proxy
 
-class ANNClassifier(Classifier):
-    """ANN Classifier.
+    def fit(self, data, feature_extractor, label_extractor):
+        """Trains a model on the given data.
+        """
+        return self.proxy.fit(data,
+                              IgniteBiFunction(feature_extractor), 
+                              IgniteBiFunction(label_extractor))
+
+    def update(self, mdl, data, feature_extractor, label_extractor):
+        """Trains the model on the given data.
+        """
+        return self.proxy.update(mdl,
+                                 data, 
+                                 IgniteBiFunction(feature_extractor), 
+                                 IgniteBiFunction(label_extractor))
+
+class ANNClassificationTrainer(ClassificationTrainer):
+    """ANN classification trainer.
     """
     def __init__(self, env_builder=None, label_converter=None, k=None,
                  max_iter=None, epsilon=None, distance=None):
-        """ANN Classifier.
+        """Constructs a new instance of ANN classification trainer.
 
         Parameters
         ----------
@@ -39,23 +58,14 @@ class ANNClassifier(Classifier):
         epsilon : Epsilon, delta of convergence.
         distance : Distance measure.
         """
-        pass
+        ClassificationTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class DecisionTreeClassifier(Classifier):
-    """Decision Tree Classifier.
+class DecisionTreeClassificationTrainer(ClassificationTrainer):
+    """DecisionTree classification trainer.
     """
     def __init__(self, env_builder=None, label_converter=None, max_deep=None,
                  min_impurity_decrease=None, compressor=None, use_index=True):
-        """Decision Tree Classifier.
+        """Constructs a new instance of DecisionTree classification trainer.
 
         Parameters
         ----------
@@ -66,46 +76,28 @@ class DecisionTreeClassifier(Classifier):
         compressor : Compressor.
         use_index : Use index.
         """
-        pass
+        ClassificationTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class KNNClassifier(Classifier):
-    """KNN Classifier.
+class KNNClassificationTrainer(ClassificationTrainer):
+    """KNN classification trainer.
     """
     def __init__(self, env_builder=None, label_converter=None):
-        """KNN Classifier.
+        """Constructs a new instance of KNN classification trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
         label_converter : Label converter.
         """
-        pass
+        ClassificationTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class LogRegClassifier(Classifier):
-    """Logistic Regression Classifier.
+class LogRegClassificationTrainer(ClassificationTrainer):
+    """LogisticRegression classification trainer.
     """
     def __init__(self, env_builder=None, label_converter=None, max_iter=None,
                  batch_size=None, max_loc_iter=None, update_strategy=None,
                  seed=None):
-        """Logistic Regression Classifier.
+        """Constructs a new instance of LogisticRegression classification trainer.
 
         Parameters
         ----------
@@ -117,25 +109,16 @@ class LogRegClassifier(Classifier):
         update_strategy : Update strategy.
         seed : Seed.
         """
-        pass
+        ClassificationTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
-
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
-
-class RandomForestClassifier(Classifier):
-    """Random Forest Classifier.
+class RandomForestClassificationTrainer(ClassificationTrainer):
+    """RandomForest classification trainer.
     """
     def __init__(self, env_builder=None, label_converter=None,
                  trees=None, sub_sample_size=None, max_depth=None,
                  min_impurity_delta=None, features_count_selection_strategy=None,
                  nodes_to_learn_selection_strategy=None, seed=None):
-        """Random Forest Classifier.
+        """Constructs a new instance of RandomForest classification trainer.
 
         Parameters
         ----------
@@ -146,14 +129,28 @@ class RandomForestClassifier(Classifier):
         max_depth : Max depth.
         min_impurity_delta : Min impurity delta.
         features_count_selection_strategy : Features count selection strategy.
+        nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
+        seed : Seed.
         """
-        pass
+        ClassificationTrainer.__init__(None)
 
-    def fit(self, data, feature_extractor, label_extractor):
-        pass
+class MLPClassificationTrainer(ClassificationTrainer):
+    """MLP classification trainer.
+    """
+    def __init__(self, env_builder=None, label_converter=None, arch, loss,
+                 update_strategy, max_iter, batch_size, max_loc_iter, seed):
+        """Constructs a new instance of MLP classification trainer.
 
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        pass
-
-    def is_updatable(mdl)
-        pass
+        Parameters
+        ----------
+        env_builder : Environment builder.
+        label_converter : Label converter.
+        arch : Architecture.
+        loss : Loss function.
+        update_strategy : Update strategy.
+        max_iter : Max number of iterations.
+        batch_size: Batch size.
+        max_loc_iter: Max number of local iterations.
+        seed : Seed.
+        """
+        ClassificationTrainer.__init__(None)
