@@ -16,82 +16,117 @@
 """Regression trainers.
 """
 
-from ..common import SupervisedTrainer
-from ..common import IgniteBiFunction
+import numpy as np
 
-class RegressionTrainer(SupervisedTrainer):
-    """Regression.
-    """
+from ..common import SupervisedTrainer
+from ..common import Proxy
+from ..common import LearningEnvironmentBuilder
+
+from ..common import gateway
+
+class RegressionModel:
+
     def __init__(self, proxy):
         self.proxy = proxy
 
-    def fit(self, data, feature_extractor, label_extractor):
-        return self.proxy.fit(data,
-                              IgniteBiFunction(feature_extractor),
-                              IgniteBiFunction(label_extractor))
+    def predict(self, X):
+        X = np.array(X)
+        if len(X.shape) == 1:
+            return self.__predict(X)
+        elif len(X.shape) == 2:
+            return [self.__predict(x) for x in X]
 
-    def update(self, mdl, data, feature_extractor, label_extractor):
-        return self.proxy.update(mdl,
-                                 data,
-                                 IgniteBiFunction(feature_extractor),
-                                 IgniteBiFunction(label_extractor))
+    def __predict(self, X):
+        java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
+        java_array = gateway.new_array(gateway.jvm.double, len(X))
+        for i in range(len(X)):
+            java_array[i] = float(X[i])
+        return self.proxy.predict(java_vector_utils.of(java_array))
+
+class RegressionTrainer(SupervisedTrainer, Proxy):
+    """Regression.
+    """
+    def __init__(self, proxy):
+        """Constructs a new instance of regression trainer.
+        """
+        Proxy.__init__(self, proxy)
+
+    def fit(self, X, y):
+        X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
+        y_java = gateway.new_array(gateway.jvm.double, len(y))
+
+        for i in range(len(X)):
+            for j in range(len(X[i])):
+                X_java[i][j] = float(X[i][j])
+            y_java[i] = float(y[i])
+
+        java_model = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy).fit(X_java, y_java)
+    
+        return RegressionModel(java_model)
 
 class DecisionTreeRegressionTrainer(RegressionTrainer):
     """DecisionTree regression trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None, max_deep=None,
-                 min_impurity_decrease=None, compressor=None, use_index=True):
+    def __init__(self, env_builder=LearningEnvironmentBuilder(),
+                 max_deep=5,
+                 min_impurity_decrease=0.0, compressor=None, use_index=True):
         """Constructs a new instance of DecisionTree regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_converter : Label converter.
         max_deep : Max deep.
         min_impurity_decrease : Min impurity decrease.
         compressor : Compressor.
         """
-        RegressionTrainer.__init__(None)
+        proxy = gateway.jvm.org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer(max_deep, min_impurity_decrease, compressor)
+        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withUsingIdx(use_index)
+
+        RegressionTrainer.__init__(self, proxy)
 
 class KNNRegressionTrainer(RegressionTrainer):
     """KNN regression trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None):
+    def __init__(self, env_builder=LearningEnvironmentBuilder()):
         """Constructs a new instance of linear regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_converter : Label converter.
         """
-        RegressionTrainer.__init__(None)
+        proxy = gateway.jvm.org.apache.ignite.ml.knn.regression.KNNRegressionTrainer()
+        proxy.withEnvironmentBuilder(env_builder.proxy)
+
+        RegressionTrainer.__init__(self, proxy)
 
 class LinearRegressionTrainer(RegressionTrainer):
     """Linear regression trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None):
+    def __init__(self, env_builder=LearningEnvironmentBuilder()):
         """Constructs a new instance of linear regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_converter : Label converter.
         """
-        RegressionTrainer.__init__(None)
+        proxy = gateway.jvm.org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer()
+        proxy.withEnvironmentBuilder(env_builder.proxy)
+
+        RegressionTrainer.__init__(self, proxy)
 
 class RandomForestRegressionTrainer(RegressionTrainer):
     """RandomForest regression trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None,
-                  trees=None, sub_sample_size=None, max_depth=None,
-                  min_impurity_delta=None, features_count_selection_strategy=None,
+    def __init__(self, env_builder=LearningEnvironmentBuilder(),
+                  trees=1, sub_sample_size=1.0, max_depth=5,
+                  min_impurity_delta=0.0, features_count_selection_strategy=None,
                   nodes_to_learn_selection_strategy=None, seed=None):
         """Constructs a new instance of RandomForest regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_converter : Label converter.
         trees : Number of trees.
         sub_sample_size : Sub sample size.
         max_depth : Max depth.
@@ -100,19 +135,28 @@ class RandomForestRegressionTrainer(RegressionTrainer):
         nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
         seed : Seed.
         """
-        RegressionTrainer.__init__(None)
+        proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer()
+        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withAmountOfTrees(trees)
+        proxy.withSubSampleSize(subSampleSize)
+        proxy.withMaxDepth(maxDepth)
+        proxy.withMinImpurityDelta(minImpurityDelta)
+        #proxy.withFeatureCountSelectionStrategy(featureCountSelectionStrategy)
+        #proxy.withNodesToLearnSelectionStrategy(nodesToLearnSelectionStrategy)
+        proxy.withSeed(seed)
+
+        RegressionTrainer.__init__(self, proxy)
 
 class MLPRegressionTrainer(RegressionTrainer):
     """MLP regression trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None, arch, loss,
-                 update_strategy, max_iter, batch_size, max_loc_iter, seed):
+    def __init__(self, env_builder=LearningEnvironmentBuilder(), arch=None, loss=None,
+                 update_strategy=None, max_iter=None, batch_size=None, max_loc_iter=None, seed=None):
         """Constructs a new instance of MLP regression trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_converter : Label converter.
         arch : Architecture.
         loss : Loss function.
         update_strategy : Update strategy.
@@ -121,4 +165,5 @@ class MLPRegressionTrainer(RegressionTrainer):
         max_loc_iter : Max number of local iterations.
         seed : Seed.
         """
-        RegressionTrainer.__init__(None)
+        RegressionTrainer.__init__(self, None)
+        raise Exception("Unsupported")

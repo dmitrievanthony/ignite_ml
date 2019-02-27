@@ -18,13 +18,13 @@
 
 from ..common/UnsupervisedTrainer
 
-class ClusteringTrainer(UnsupervisedTrainer):
+class ClusteringTrainer(UnsupervisedTrainer, Proxy):
     """Clustering trainer.
     """
     def __init__(self, proxy):
         """Constructs a new instance of ClusteringTrainer.
         """
-        self.proxy = proxy
+        Proxy.__init__(self, proxy)
 
     def fit(self, data, feature_extractor):
         return self.proxy.fit(data,
@@ -38,36 +38,34 @@ class ClusteringTrainer(UnsupervisedTrainer):
 class GMMClusteringTrainer(ClusteringTrainer):
     """GMM clustring trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None, count_of_components,
+    def __init__(self, env_builder=None, count_of_components,
                  max_iter, initial_means, eps, max_init_tries):
         """Constructs a new instance of GMM clustring trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_extractor : Label extractor.
         count_of_components : Count of components.
         max_iter : Max number of iterations.
         initial_means : Initial means.
         eps : Epsilon.
         max_init_tries : Max init tries.
         """
-        ClusteringTrainer.__init__(None)
+        ClusteringTrainer.__init__(self, None)
 
 class KMeansClusteringTrainer(ClusteringTrainer):
     """KMeans clustring trainer.
     """
-    def __init__(self, env_builder=None, label_converter=None, amount_of_clusters,
+    def __init__(self, env_builder=None, amount_of_clusters,
                  max_iter, eps, distance):
         """Constructs a new instance of KMeans clustering trainer.
 
         Parameters
         ----------
         env_builder : Environment builder.
-        label_converter : Label converter.
         amount_of_clusters : Amount of clusters.
         max_iter : Max number of iterations.
         eps : Epsilon.
         distance : Distance measure.
         """
-        ClusteringTrainer.__init__(None)
+        ClusteringTrainer.__init__(self, None)

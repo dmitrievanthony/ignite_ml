@@ -16,99 +16,127 @@
 """Common classes.
 """
 
+from abc import abstractmethod
+from py4j.java_gateway import JavaGateway
+
+gateway = JavaGateway(start_callback_server=True)
+#gateway.restart_callback_server()
+
+class Proxy:
+    """Proxy class for Java object.
+    """
+    def __init__(self, proxy):
+        """Constructs a new instance of proxy class for Java object.
+        """
+        self.proxy = proxy
+
+class LearningEnvironmentBuilder(Proxy):
+
+    def __init__(self):
+        java_proxy = gateway.jvm.org.apache.ignite.ml.environment.LearningEnvironmentBuilder.defaultBuilder()
+        Proxy.__init__(self, java_proxy)
+
 class SupervisedTrainer:
     """Supervised trainer.
     """
     @abstractmethod
-    def fit(self, data, feature_extractor, label_extractor):
+    def fit(self, X, y):
         """Trains model based on data.
 
         Parameters
         ----------
-        data : Apache Ignite cache.
-        feature_extractor : Feature extractor.
-        label_extractor : Label extractor.
+        X : x.
+        y : y.
         """
-        pass
+        raise Exception("Not implemented")
 
     @abstractmethod
-    def update(self, mdl, data, feature_extractor, label_extractor):
+    def fit_on_cache(self, cache, columns):
+        """Trains model based on data.
+
+        Parameters
+        ----------
+        cache : Apache Ignite cache.
+        columns : List of columns
+        """
+        raise Exception("Not implemented")
+
+    @abstractmethod
+    def update(self, mdl, X, y):
         """Updates the model.
 
         Parameters
         ----------
         mdl : Model.
-        data : Apache Ignite cache.
-        feature_extractor : Feature extractor.
-        label_extractor : Label extractor.
+        X : x.
+        y : y.
         """
-        pass
+        raise Exception("Not implemented")
+
+    @abstractmethod
+    def update_on_cache(self, mdl, cache, columns):
+        """Updates the model.
+
+        Parameters
+        ----------
+        mdl : Model.
+        cache : Apache Ignite cache.
+        columns : List of columns.
+        """
+        raise Exception("Not implemented")
 
 class UnsupervisedTrainer:
     """Unsupervised trainer.
     """
     @abstractmethod
-    def fit(self, data, feature_extractor):
+    def fit(self, X):
+        """Trains model based on data.
+
+        Parameters
+        ----------
+        X : x.
+        """
+        raise Exception("Not implemented")
+
+    @abstractmethod
+    def fit_on_cache(self, data, columns):
         """Trains model based on data.
 
         Parameters
         ----------
         data : Apache Ignite cache.
-        feature_extractor : Feature extractor.
+        columns : List of columns.
         """
-        pass
+        raise Exception("Not implemented")
 
     @abstractmethod
-    def update(self, mdl, data, feature_extractor):
+    def update(self, mdl, X):
         """Updates the model.
 
         Parameters
         ----------
         mdl : Model.
-        data : Apache Ignite cache.
-        feature_extractor : Feature extractor.
+        X : x.
         """
-        pass
+        raise Exception("Not implemented")
 
-class IgniteBiFunction:
-    """IgniteBiFunction wrapper.
+    @abstractmethod
+    def update_on_cache(self, mdl, cache, columns):
+        """Updates the model.
+
+        Parameters
+        ----------
+        mdl : Model.
+        cache : Apache Ignite cache.
+        columns : List of columns.
+        """
+        raise Exception("Not implemented")
+
+class DistanceMeasure:
+    pass
+
+class EuclideanDistance(DistanceMeasure, Proxy):
+    """Constructs a new instance of Euclidean distance.
     """
-    def __init__(self, lambda_function):
-        """Constructs a new instance of IgniteBiFunction wrapper.
-        """
-        self.gateway = gateway
-        self.lambda_function = lambda_function
-
-    def apply(self, a, b):
-        """Apply.
-        """
-        return self.lambda_function(a, b)
-
-    def andThen(self, after):
-        """And then.
-        """
-        return IgniteBiFunction(lambda k, v: after.apply(self.apply(k, v)))
-
-    class Java:
-        """Java.
-        """
-        implements = ["org.apache.ignite.ml.math.functions.IgniteBiFunction"]
-
-class IgniteFunction:
-    """IgniteFunction wrapper.
-    """
-    def __init__(self, lambda_function):
-        """Constructs a new instance of IgniteFunction wrapper.
-        """
-        self.gateway = gateway
-        self.lambda_function = lambda_function
-
-    def andThen(self, after):
-        """And then.
-        """
-        return IgniteFunction(lambda v: after.apply(self.apply(v))
-
-    class Java:
-        """Java.
-        """
-        implements = ["org.apache.ignite.ml.math.functions.IgniteFunction"]
+    def __init__(self):
+       Proxy.__init__(self, gateway.jvm.org.apache.ignite.ml.math.distances.EuclideanDistance()) 
