@@ -19,7 +19,27 @@
 from abc import abstractmethod
 from py4j.java_gateway import JavaGateway
 
-gateway = JavaGateway(start_callback_server=True)
+import os
+from py4j.java_gateway import JavaGateway
+
+ignite_home = os.environ['IGNITE_HOME']
+
+libs_jar = []
+for f in os.listdir(ignite_home + '/libs'):
+    if f.endswith('.jar'):
+        libs_jar.append(ignite_home + '/libs/' + f)
+
+optional_libs_jar = []
+for opt in os.listdir(ignite_home + '/libs/optional'):
+    for f in os.listdir(ignite_home + '/libs/optional/' + opt):
+        if f.endswith('.jar'):
+            optional_libs_jar.append(ignite_home + '/libs/optional/' + opt + '/' + f)
+
+classpath = ':'.join(libs_jar + optional_libs_jar)
+
+gateway = JavaGateway.launch_gateway(classpath=classpath, die_on_exit=True)
+
+#gateway = JavaGateway(start_callback_server=True)
 #gateway.restart_callback_server()
 
 class Proxy:
