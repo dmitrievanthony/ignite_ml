@@ -144,11 +144,11 @@ class LogRegClassificationTrainer(ClassificationTrainer):
         seed : Seed.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer()
-        proxy.setEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(env_builder.proxy)
         proxy.withMaxIterations(max_iter)
         proxy.withBatchSize(batch_size)
         proxy.withLocIterations(max_loc_iter)
-        proxy.withUpdateStgy(update_strategy)
+        #proxy.withUpdatesStgy(update_strategy)
         proxy.withSeed(seed)
 
         ClassificationTrainer.__init__(self, proxy)
