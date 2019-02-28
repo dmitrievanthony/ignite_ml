@@ -184,7 +184,16 @@ class RandomForestClassificationTrainer(ClassificationTrainer):
         #proxy.withSeed(seed)
 
         ClassificationTrainer.__init__(self, None)
-        raise Exception("Not implemented")
+
+    def fit(self, X, y):
+        metas = gateway.jvm.java.util.ArrayList()
+        for i in range(len(X[0])):
+            meta = gateway.jvm.org.apache.ignite.ml.dataset.feature.FeatureMeta(None, i, False)
+            metas.add(meta)
+
+        self.proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer(metas)
+
+        return super(RandomForestClassificationTrainer, self).fit(X, y)
 
 class MLPClassificationTrainer(ClassificationTrainer):
     """MLP classification trainer.

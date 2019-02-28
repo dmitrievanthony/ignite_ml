@@ -116,13 +116,13 @@ class LinearRegressionTrainer(RegressionTrainer):
         RegressionTrainer.__init__(self, proxy)
 
 class RandomForestRegressionTrainer(RegressionTrainer):
-    """RandomForest regression trainer.
+    """RandomForest classification trainer.
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(),
-                  trees=1, sub_sample_size=1.0, max_depth=5,
-                  min_impurity_delta=0.0, features_count_selection_strategy=None,
-                  nodes_to_learn_selection_strategy=None, seed=None):
-        """Constructs a new instance of RandomForest regression trainer.
+                 trees=1, sub_sample_size=1.0, max_depth=5,
+                 min_impurity_delta=0.0, features_count_selection_strategy=None,
+                 nodes_to_learn_selection_strategy=None, seed=None):
+        """Constructs a new instance of RandomForest classification trainer.
 
         Parameters
         ----------
@@ -131,21 +131,31 @@ class RandomForestRegressionTrainer(RegressionTrainer):
         sub_sample_size : Sub sample size.
         max_depth : Max depth.
         min_impurity_delta : Min impurity delta.
-        feature_count_selection_strategy : Feature count selection strategy.
+        features_count_selection_strategy : Features count selection strategy.
         nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
         seed : Seed.
         """
-        proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
-        proxy.withAmountOfTrees(trees)
-        proxy.withSubSampleSize(subSampleSize)
-        proxy.withMaxDepth(maxDepth)
-        proxy.withMinImpurityDelta(minImpurityDelta)
+        #proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer()
+        #proxy.withEnvironmentBuilder(env_builder.proxy)
+        #proxy.withAmountOfTrees(trees)
+        #proxy.withSubSampleSize(subSampleSize)
+        #proxy.withMaxDepth(maxDepth)
+        #proxy.withMinImpurityDelta(minImpurityDelta)
         #proxy.withFeatureCountSelectionStrategy(featureCountSelectionStrategy)
         #proxy.withNodesToLearnSelectionStrategy(nodesToLearnSelectionStrategy)
-        proxy.withSeed(seed)
+        #proxy.withSeed(seed)
 
-        RegressionTrainer.__init__(self, proxy)
+        RegressionTrainer.__init__(self, None)
+
+    def fit(self, X, y):
+        metas = gateway.jvm.java.util.ArrayList()
+        for i in range(len(X[0])):
+            meta = gateway.jvm.org.apache.ignite.ml.dataset.feature.FeatureMeta(None, i, False)
+            metas.add(meta)
+
+        self.proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer(metas)
+
+        return super(RandomForestRegressionTrainer, self).fit(X, y)
 
 class MLPRegressionTrainer(RegressionTrainer):
     """MLP regression trainer.
