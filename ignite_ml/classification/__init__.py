@@ -105,9 +105,9 @@ class DecisionTreeClassificationTrainer(ClassificationTrainer):
         compressor : Compressor.
         use_index : Use index.
         """
-        proxy = gateway.jvm.org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer(max_deep, min_impurity_decrease, compressor)
+        proxy = gateway.jvm.org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer(max_deep, min_impurity_decrease, compressor)
         proxy.withEnvironmentBuilder(env_builder.proxy)
-        proxy.withUsingIdx(use_index)
+        proxy.withUseIndex(use_index)
 
         ClassificationTrainer.__init__(self, proxy)
 
@@ -205,3 +205,27 @@ class MLPClassificationTrainer(ClassificationTrainer):
         seed : Seed.
         """
         ClassificationTrainer.__init__(self, None)
+        raise Exception("Not implemented")
+
+class SVMClassificationTrainer(ClassificationTrainer):
+    """SVM classification trainer.
+    """
+    def __init__(self, env_builder=LearningEnvironmentBuilder(), l=0.4, max_iter=200, max_local_iter=100, seed=1234):
+        """Constructs a new instance of SVM classification trainer.
+
+        Parameters
+        ----------
+        env_builder : Environment builder.
+        l : Lambda.
+        max_iter : Max number of iterations.
+        max_loc_iter : Max number of local iterations.
+        seed : Seed.
+        """
+        proxy = gateway.jvm.org.apache.ignite.ml.svm.SVMLinearClassificationTrainer()    
+        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withLambda(l)
+        proxy.withAmountOfIterations(max_iter)
+        proxy.withAmountOfLocIterations(max_local_iter)
+        proxy.withSeed(seed)
+
+        ClassificationTrainer.__init__(self, proxy)
