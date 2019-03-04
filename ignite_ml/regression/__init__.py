@@ -24,10 +24,10 @@ from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
 
-class RegressionModel:
+class RegressionModel(Proxy):
 
     def __init__(self, proxy):
-        self.proxy = proxy
+        Proxy.__init__(self, proxy)
 
     def predict(self, X):
         X = np.array(X)
@@ -40,7 +40,10 @@ class RegressionModel:
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
         java_array = gateway.new_array(gateway.jvm.double, len(X))
         for i in range(len(X)):
-            java_array[i] = float(X[i])
+            if X[i] is not None:
+                java_array[i] = float(X[i])
+            else:
+                java_array[i] = float('NaN')
         return self.proxy.predict(java_vector_utils.of(java_array))
 
 class RegressionTrainer(SupervisedTrainer, Proxy):
@@ -51,16 +54,24 @@ class RegressionTrainer(SupervisedTrainer, Proxy):
         """
         Proxy.__init__(self, proxy)
 
-    def fit(self, X, y):
+    def fit(self, X, y, preprocessor=None):
         X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
         y_java = gateway.new_array(gateway.jvm.double, len(y))
 
         for i in range(len(X)):
             for j in range(len(X[i])):
-                X_java[i][j] = float(X[i][j])
-            y_java[i] = float(y[i])
+                if X[i][j] is not None:
+                    X_java[i][j] = float(X[i][j])
+                else:
+                    X_java[i][j] = float('NaN')
+            if y[i] is not None:
+                y_java[i] = float(y[i])
+            else:
+                y_java[i] = float('NaN')
 
-        java_model = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy).fit(X_java, y_java)
+        java_trainer = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
+    
+        java_model = java_trainer.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
     
         return RegressionModel(java_model)
 
@@ -80,7 +91,7 @@ class DecisionTreeRegressionTrainer(RegressionTrainer):
         compressor : Compressor.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer(max_deep, min_impurity_decrease, compressor)
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withUsingIdx(use_index)
 
         RegressionTrainer.__init__(self, proxy)
@@ -96,7 +107,7 @@ class KNNRegressionTrainer(RegressionTrainer):
         env_builder : Environment builder.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.knn.regression.KNNRegressionTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
 
         RegressionTrainer.__init__(self, proxy)
 
@@ -111,7 +122,7 @@ class LinearRegressionTrainer(RegressionTrainer):
         env_builder : Environment builder.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
 
         RegressionTrainer.__init__(self, proxy)
 

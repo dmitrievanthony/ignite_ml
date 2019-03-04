@@ -39,9 +39,6 @@ classpath = ':'.join(libs_jar + optional_libs_jar)
 
 gateway = JavaGateway.launch_gateway(classpath=classpath, die_on_exit=True)
 
-#gateway = JavaGateway(start_callback_server=True)
-#gateway.restart_callback_server()
-
 class Proxy:
     """Proxy class for Java object.
     """
@@ -49,6 +46,22 @@ class Proxy:
         """Constructs a new instance of proxy class for Java object.
         """
         self.proxy = proxy
+
+    def proxy_or_none(proxy):
+        if proxy:
+            return proxy.proxy
+        else:
+            return None
+
+class MLPArchitecture(Proxy):
+    """MLP architecture.
+    """
+    def __init__(self, input_size):
+        java_proxy = gateway.jvm.org.apache.ignite.ml.nn.architecture.MLPArchitecture(input_size)
+        Proxy.__init__(self, java_proxy)
+
+    def with_layer(neurons, has_bias, activator):
+        self.proxy.withAddedLayer(neurons, has_bias, activator.proxy)
 
 class LearningEnvironmentBuilder(Proxy):
 
@@ -60,29 +73,31 @@ class SupervisedTrainer:
     """Supervised trainer.
     """
     @abstractmethod
-    def fit(self, X, y):
+    def fit(self, X, y, preprocessor=None):
         """Trains model based on data.
 
         Parameters
         ----------
         X : x.
         y : y.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
     @abstractmethod
-    def fit_on_cache(self, cache, columns):
+    def fit_on_cache(self, cache, columns, preprocessor=None):
         """Trains model based on data.
 
         Parameters
         ----------
         cache : Apache Ignite cache.
-        columns : List of columns
+        columns : List of columns.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
     @abstractmethod
-    def update(self, mdl, X, y):
+    def update(self, mdl, X, y, preprocessor=None):
         """Updates the model.
 
         Parameters
@@ -90,11 +105,12 @@ class SupervisedTrainer:
         mdl : Model.
         X : x.
         y : y.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
     @abstractmethod
-    def update_on_cache(self, mdl, cache, columns):
+    def update_on_cache(self, mdl, cache, columns, preprocessor=None):
         """Updates the model.
 
         Parameters
@@ -102,6 +118,7 @@ class SupervisedTrainer:
         mdl : Model.
         cache : Apache Ignite cache.
         columns : List of columns.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
@@ -109,39 +126,42 @@ class UnsupervisedTrainer:
     """Unsupervised trainer.
     """
     @abstractmethod
-    def fit(self, X):
+    def fit(self, X, preprocessor=None):
         """Trains model based on data.
 
         Parameters
         ----------
         X : x.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
     @abstractmethod
-    def fit_on_cache(self, data, columns):
+    def fit_on_cache(self, data, columns, preprocessor=None):
         """Trains model based on data.
 
         Parameters
         ----------
         data : Apache Ignite cache.
         columns : List of columns.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
     @abstractmethod
-    def update(self, mdl, X):
+    def update(self, mdl, X, preprocessor=None):
         """Updates the model.
 
         Parameters
         ----------
         mdl : Model.
         X : x.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
 
     @abstractmethod
-    def update_on_cache(self, mdl, cache, columns):
+    def update_on_cache(self, mdl, cache, columns, preprocessor=None):
         """Updates the model.
 
         Parameters
@@ -149,14 +169,6 @@ class UnsupervisedTrainer:
         mdl : Model.
         cache : Apache Ignite cache.
         columns : List of columns.
+        preprocessor : Preprocessor.
         """
         raise Exception("Not implemented")
-
-class DistanceMeasure:
-    pass
-
-class EuclideanDistance(DistanceMeasure, Proxy):
-    """Constructs a new instance of Euclidean distance.
-    """
-    def __init__(self):
-       Proxy.__init__(self, gateway.jvm.org.apache.ignite.ml.math.distances.EuclideanDistance()) 

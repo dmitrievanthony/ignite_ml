@@ -20,15 +20,14 @@ import numpy as np
 
 from ..common import UnsupervisedTrainer
 from ..common import Proxy
-from ..common import EuclideanDistance
 from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
 
-class ClusteringModel:
+class ClusteringModel(Proxy):
 
     def __init__(self, proxy):
-        self.proxy = proxy
+        Proxy.__init__(self, proxy)
 
     def predict(self, X):
         X = np.array(X)
@@ -41,7 +40,10 @@ class ClusteringModel:
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
         java_array = gateway.new_array(gateway.jvm.double, len(X))
         for i in range(len(X)):
-            java_array[i] = float(X[i])
+            if X[i] is not None:
+                java_array[i] = float(X[i])
+            else:
+                java_array[i] = float('NaN')
         return self.proxy.predict(java_vector_utils.of(java_array))
 
 class ClusteringTrainer(UnsupervisedTrainer, Proxy):
@@ -52,15 +54,20 @@ class ClusteringTrainer(UnsupervisedTrainer, Proxy):
         """
         Proxy.__init__(self, proxy)
 
-    def fit(self, X):
+    def fit(self, X, preprocessing=None):
         X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
         y_java = gateway.new_array(gateway.jvm.double, len(X))
 
         for i in range(len(X)):
             for j in range(len(X[i])):
-                X_java[i][j] = float(X[i][j])
+                if X[i][j] is not None:
+                    X_java[i][j] = float(X[i][j])
+                else:
+                    X_java[i][j] = float('NaN')
 
-        java_model = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy).fit(X_java, y_java)
+        java_trainer = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)    
+
+        java_model = java_trainer.fit(X_java, y_java, Proxy.proxy_or_none(preprocessing))
 
         return ClusteringModel(java_model)
 
@@ -85,7 +92,7 @@ class GMMClusteringTrainer(ClusteringTrainer):
         min_cluster_probability : Min cluster probability.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.clustering.gmm.GmmTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withInitialCountOfComponents(count_of_components)
         #proxy.withInitialMeans(initial_means)
         proxy.withMaxCountIterations(max_iter)
@@ -102,7 +109,7 @@ class KMeansClusteringTrainer(ClusteringTrainer):
     """KMeans clustring trainer.
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(), amount_of_clusters=2,
-                 max_iter=10, eps=1e-4, distance=EuclideanDistance()):
+                 max_iter=10, eps=1e-4, distance='euclidean'):
         """Constructs a new instance of KMeans clustering trainer.
 
         Parameters
@@ -111,13 +118,23 @@ class KMeansClusteringTrainer(ClusteringTrainer):
         amount_of_clusters : Amount of clusters.
         max_iter : Max number of iterations.
         eps : Epsilon.
-        distance : Distance measure.
+        distance : Distance measure ('euclidean', 'hamming', 'manhattan').
         """
         proxy = gateway.jvm.org.apache.ignite.ml.clustering.kmeans.KMeansTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withAmountOfClusters(amount_of_clusters)
         proxy.withMaxIterations(max_iter)
         proxy.withEpsilon(eps)
-        proxy.withDistance(distance.proxy)
+
+        java_distance = None
+        if distance == 'euclidean':
+            java_distance = gateway.jvm.org.apache.ignite.ml.math.distances.EuclideanDistance()
+        elif distance == 'hamming':
+            java_distance = gateway.jvm.org.apache.ignite.ml.math.distances.HammingDistance()
+        elif distance == 'manhattan':
+            java_distance = gateway.jvm.org.apache.ignite.ml.math.distances.ManhattanDistance()
+        elif distance:
+            raise Exception("Unknown distance type : %s" % distance)
+        proxy.withDistance(java_distance)
 
         ClusteringTrainer.__init__(self, proxy)

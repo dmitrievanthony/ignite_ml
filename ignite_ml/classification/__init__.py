@@ -20,15 +20,14 @@ import numpy as np
 
 from ..common import SupervisedTrainer
 from ..common import Proxy
-from ..common import EuclideanDistance
 from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
 
-class ClassificationModel:
+class ClassificationModel(Proxy):
 
     def __init__(self, proxy):
-        self.proxy = proxy
+        Proxy.__init__(self, proxy)
 
     def predict(self, X):
         X = np.array(X)
@@ -41,7 +40,10 @@ class ClassificationModel:
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
         java_array = gateway.new_array(gateway.jvm.double, len(X))
         for i in range(len(X)):
-            java_array[i] = float(X[i])
+            if X[i] is not None:
+                java_array[i] = float(X[i])
+            else:
+                java_array[i] = float('NaN')
         return self.proxy.predict(java_vector_utils.of(java_array))
 
 class ClassificationTrainer(SupervisedTrainer, Proxy):
@@ -52,16 +54,23 @@ class ClassificationTrainer(SupervisedTrainer, Proxy):
         """
         Proxy.__init__(self, proxy)
 
-    def fit(self, X, y):
+    def fit(self, X, y, preprocessor=None):
         X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
         y_java = gateway.new_array(gateway.jvm.double, len(y))
 
         for i in range(len(X)):
             for j in range(len(X[i])):
-                X_java[i][j] = float(X[i][j])
-            y_java[i] = float(y[i])
+                if X[i][j] is not None:
+                    X_java[i][j] = float(X[i][j])
+                else:
+                    X_java[i][j] = float('NaN')
+            if y[i] is not None:
+                y_java[i] = float(y[i])
+            else:
+                y_java[i] = float('NaN')
 
-        java_model = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy).fit(X_java, y_java)
+        java_trainer = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
+        java_model = java_trainer.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
 
         return ClassificationModel(java_model)
 
@@ -69,7 +78,7 @@ class ANNClassificationTrainer(ClassificationTrainer):
     """ANN classification trainer.
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(), k=2,
-                 max_iter=10, eps=1e-4, distance=EuclideanDistance()):
+                 max_iter=10, eps=1e-4, distance='euclidean'):
         """Constructs a new instance of ANN classification trainer.
 
         Parameters
@@ -78,15 +87,25 @@ class ANNClassificationTrainer(ClassificationTrainer):
         k : Number of clusters.
         max_iter : Max number of iterations.
         eps : Epsilon, delta of convergence.
-        distance : Distance measure.
+        distance : Distance measure ('euclidean', 'hamming', 'manhattan').
         """
         proxy = gateway.jvm.org.apache.ignite.ml.knn.ann.ANNClassificationTrainer()
-        
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withK(k)
         proxy.withMaxIterations(max_iter)
         proxy.withEpsilon(eps)
-        proxy.withDistance(distance.proxy)
+
+        java_distance = None
+        if distance == 'euclidean':
+            java_distance = gateway.jvm.org.apache.ignite.ml.math.distances.EuclideanDistance()
+        elif distance == 'hamming':
+            java_distance = gateway.jvm.org.apache.ignite.ml.math.distances.HammingDistance()
+        elif distance == 'manhattan':
+            java_distance = gateway.jvm.org.apache.ignite.ml.math.distances.ManhattanDistance()
+        elif distance:
+            raise Exception("Unknown distance type: %s" % distance)
+        proxy.withDistance(java_distance)
 
         ClassificationTrainer.__init__(self, proxy)
 
@@ -106,7 +125,8 @@ class DecisionTreeClassificationTrainer(ClassificationTrainer):
         use_index : Use index.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer(max_deep, min_impurity_decrease, compressor)
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withUseIndex(use_index)
 
         ClassificationTrainer.__init__(self, proxy)
@@ -122,7 +142,7 @@ class KNNClassificationTrainer(ClassificationTrainer):
         env_builder : Environment builder.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.knn.classification.KNNClassificationTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
 
         ClassificationTrainer.__init__(self, proxy)
 
@@ -144,7 +164,9 @@ class LogRegClassificationTrainer(ClassificationTrainer):
         seed : Seed.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer()
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
+
         proxy.withMaxIterations(max_iter)
         proxy.withBatchSize(batch_size)
         proxy.withLocIterations(max_loc_iter)
@@ -231,7 +253,7 @@ class SVMClassificationTrainer(ClassificationTrainer):
         seed : Seed.
         """
         proxy = gateway.jvm.org.apache.ignite.ml.svm.SVMLinearClassificationTrainer()    
-        proxy.withEnvironmentBuilder(env_builder.proxy)
+        proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withLambda(l)
         proxy.withAmountOfIterations(max_iter)
         proxy.withAmountOfLocIterations(max_local_iter)
