@@ -25,12 +25,27 @@ from ..common import LearningEnvironmentBuilder
 from ..common import gateway
 
 class RegressionModel(Proxy):
-
+    """Regression model.
+    """
     def __init__(self, proxy, accepts_matrix):
+        """Constructs a new instance of regression model.
+
+        Parameters
+        ----------
+        proxy : Proxy object that represents Java model.
+        accept_matrix : Flag that identifies if model accepts matrix or vector.
+        """
         self.accepts_matrix = accepts_matrix
         Proxy.__init__(self, proxy)
 
     def predict(self, X):
+        """Predicts a result.
+
+        Parameters
+        ----------
+
+        X : Features.
+        """
         X = np.array(X)
         if len(X.shape) == 1:
             return self.__predict(X)

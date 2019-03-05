@@ -25,11 +25,24 @@ from ..common import LearningEnvironmentBuilder
 from ..common import gateway
 
 class ClusteringModel(Proxy):
-
+    """Clustering model.
+    """
     def __init__(self, proxy):
+        """Constructs a new instance of clustering model.
+
+        Parameters
+        ----------
+        proxy : Proxy object that represents Java model.
+        """
         Proxy.__init__(self, proxy)
 
     def predict(self, X):
+        """Predicts a result.
+
+        Parameters
+        ----------
+        X : Features.
+        """
         X = np.array(X)
         if len(X.shape) == 1:
             return self.__predict(X)
