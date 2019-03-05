@@ -65,9 +65,7 @@ class ClusteringTrainer(UnsupervisedTrainer, Proxy):
                 else:
                     X_java[i][j] = float('NaN')
 
-        java_trainer = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)    
-
-        java_model = java_trainer.fit(X_java, y_java, Proxy.proxy_or_none(preprocessing))
+        java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessing))
 
         return ClusteringModel(java_model)
 
@@ -103,7 +101,7 @@ class GMMClusteringTrainer(ClusteringTrainer):
         proxy.withMinElementsForNewCluster(min_elements_for_new_cluster)
         proxy.withMinClusterProbability(min_cluster_probability)
 
-        ClusteringTrainer.__init__(self, proxy)
+        ClusteringTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 
 class KMeansClusteringTrainer(ClusteringTrainer):
     """KMeans clustring trainer.
@@ -137,4 +135,4 @@ class KMeansClusteringTrainer(ClusteringTrainer):
             raise Exception("Unknown distance type : %s" % distance)
         proxy.withDistance(java_distance)
 
-        ClusteringTrainer.__init__(self, proxy)
+        ClusteringTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))

@@ -69,7 +69,7 @@ class PreprocessingTrainer(UnsupervisedTrainer):
                 else:
                     X_java[i][j] = float('NaN')
 
-        java_model = gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(self.proxy).fit(X_java, preprocessing)
+        java_model = self.proxy.fit(X_java, preprocessing)
 
         return PreprocessingModel(java_model)
 
@@ -79,9 +79,9 @@ class MinMaxScalerTrainer(PreprocessingTrainer):
     def __init__(self):
         """Constructs a new instance of min-max scaler trainer.
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer()
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer()
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
 class MaxAbsScalerTrainer(PreprocessingTrainer):
     """Max absolute scaler trainer.
@@ -89,9 +89,9 @@ class MaxAbsScalerTrainer(PreprocessingTrainer):
     def __init__(self):
         """Constructs a new instance of max absolute scaler trainer.
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerTrainer()
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerTrainer()
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
 class BinarizationTrainer(PreprocessingTrainer):
     """Binarization trainer.
@@ -103,10 +103,10 @@ class BinarizationTrainer(PreprocessingTrainer):
         ----------
         threshold : Threshold (Default value is 0).
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer()
-        java_proxy.withThreshold(threshold)
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer()
+        proxy.withThreshold(threshold)
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
 class EncoderTrainer(PreprocessingTrainer):
     """Encoder trainer.
@@ -120,11 +120,11 @@ class EncoderTrainer(PreprocessingTrainer):
         encoder_indexing_strategy : Encoder indexing strategy ('frequency_desc', 'frequency_asc', default value is 'frequency_desc').
         encoder_type : Encoder type ('one_hot', 'string', default value is 'one_hot').
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer()
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer()
         if not encoded_features:
             encoded_features = []
         for encoded_feature in encoded_features:
-            java_proxy.withEncodedFeature(encoded_feature)
+            proxy.withEncodedFeature(encoded_feature)
 
         java_encoder_indexing_strategy = None
         if encoder_indexing_strategy == 'frequency_desc':
@@ -133,7 +133,7 @@ class EncoderTrainer(PreprocessingTrainer):
             java_encoder_indexing_strategy = gateway.jvm.org.apache.ignite.ml.preprocessing.encoding.EncoderSortingStrategy.FREQUENCY_ASC
         elif encoder_indexing_strategy:
             raise Exception('Unknown encoder indexing strategy: %s' % encoder_indexing_strategy)
-        java_proxy.withEncoderIndexingStrategy(java_encoder_indexing_strategy)
+        proxy.withEncoderIndexingStrategy(java_encoder_indexing_strategy)
         
         java_encoder_type = None
         if encoder_type == 'one_hot':
@@ -142,9 +142,9 @@ class EncoderTrainer(PreprocessingTrainer):
             java_encoder_type = gateway.jvm.org.apache.ignite.ml.preprocessing.encoding.EncoderType.STRING_ENCODER
         elif encoder_type:
             raise Exception("Unknown encoder type: %s" % encoder_type)
-        java_proxy.withEncoderType(java_encoder_type)
+        proxy.withEncoderType(java_encoder_type)
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
 class ImputerTrainer(PreprocessingTrainer):
     """Imputer trainer.
@@ -156,7 +156,7 @@ class ImputerTrainer(PreprocessingTrainer):
         ----------
         imputing_strategy : Imputing strategy ('mean', 'most_frequent', default value is 'mean').
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer()
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer()
 
         java_imputing_strategy = None
         if imputing_strategy == 'mean':
@@ -165,9 +165,9 @@ class ImputerTrainer(PreprocessingTrainer):
             java_imputing_strategy = gateway.jvm.org.apache.ignite.ml.preprocessing.imputing.ImputingStrategy.MOST_FREQUENT
         elif imputing_strategy:
             raise Exception("Unknown imputing strategy: %s" % imputing_strategy)
-        java_proxy.withImputingStrategy(java_imputing_strategy)
+        proxy.withImputingStrategy(java_imputing_strategy)
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
 class NormalizationTrainer(PreprocessingTrainer):
     """Normalization trainer.
@@ -179,10 +179,10 @@ class NormalizationTrainer(PreprocessingTrainer):
         ----------
         p : Degree of L space parameter value.
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer()
-        java_proxy.withP(p)
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer()
+        proxy.withP(p)
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
 class StandardScalerTrainer(PreprocessingTrainer):
     """Standard scaler trainer.
@@ -190,6 +190,6 @@ class StandardScalerTrainer(PreprocessingTrainer):
     def __init__(self):
         """Constructs a new instance of standard scaler trainer.
         """
-        java_proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.standardscaling.StandardScalerTrainer()
+        proxy = gateway.jvm.org.apache.ignite.ml.preprocessing.standardscaling.StandardScalerTrainer()
 
-        PreprocessingTrainer.__init__(self, java_proxy)
+        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))

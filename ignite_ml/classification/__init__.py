@@ -69,8 +69,7 @@ class ClassificationTrainer(SupervisedTrainer, Proxy):
             else:
                 y_java[i] = float('NaN')
 
-        java_trainer = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
-        java_model = java_trainer.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
+        java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
 
         return ClassificationModel(java_model)
 
@@ -107,7 +106,7 @@ class ANNClassificationTrainer(ClassificationTrainer):
             raise Exception("Unknown distance type: %s" % distance)
         proxy.withDistance(java_distance)
 
-        ClassificationTrainer.__init__(self, proxy)
+        ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 
 class DecisionTreeClassificationTrainer(ClassificationTrainer):
     """DecisionTree classification trainer.
@@ -129,7 +128,7 @@ class DecisionTreeClassificationTrainer(ClassificationTrainer):
         proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withUseIndex(use_index)
 
-        ClassificationTrainer.__init__(self, proxy)
+        ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 
 class KNNClassificationTrainer(ClassificationTrainer):
     """KNN classification trainer.
@@ -144,7 +143,7 @@ class KNNClassificationTrainer(ClassificationTrainer):
         proxy = gateway.jvm.org.apache.ignite.ml.knn.classification.KNNClassificationTrainer()
         proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
 
-        ClassificationTrainer.__init__(self, proxy)
+        ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 
 class LogRegClassificationTrainer(ClassificationTrainer):
     """LogisticRegression classification trainer.
@@ -173,7 +172,7 @@ class LogRegClassificationTrainer(ClassificationTrainer):
         #proxy.withUpdatesStgy(update_strategy)
         proxy.withSeed(seed)
 
-        ClassificationTrainer.__init__(self, proxy)
+        ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 
 class RandomForestClassificationTrainer(ClassificationTrainer):
     """RandomForest classification trainer.
@@ -214,6 +213,7 @@ class RandomForestClassificationTrainer(ClassificationTrainer):
             metas.add(meta)
 
         self.proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer(metas)
+        self.proxy = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
 
         return super(RandomForestClassificationTrainer, self).fit(X, y)
 
@@ -259,4 +259,39 @@ class SVMClassificationTrainer(ClassificationTrainer):
         proxy.withAmountOfLocIterations(max_local_iter)
         proxy.withSeed(seed)
 
-        ClassificationTrainer.__init__(self, proxy)
+        ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
+
+class MLPClassificationTrainer(ClassificationTrainer):
+    """MLP regression trainer.
+    """
+    def __init__(self, arch, env_builder=LearningEnvironmentBuilder(), loss='mse',
+                 learning_rate=0.1, max_iter=1000, batch_size=100, loc_iter=10, seed=None):
+        """Constructs a new instance of MLP regression trainer.
+
+        Parameters
+        ----------
+        env_builder : Environment builder.
+        arch : Architecture.
+        loss : Loss function ('mse', 'log', 'l2', 'l1' or 'hinge', default value is 'mse').
+        update_strategy : Update strategy.
+        max_iter : Max number of iterations.
+        batch_size : Batch size.
+        loc_iter : Number of local iterations.
+        seed : Seed.
+        """
+        java_loss = None
+        if loss == 'mse':
+            java_loss = gateway.jvm.org.apache.ignite.ml.optimization.LossFunctions.MSE
+        elif loss == 'log':
+            java_loss = gateway.jvm.org.apache.ignite.ml.optimization.LossFunctions.LOG
+        elif loss == 'l2':
+            java_loss = gateway.jvm.org.apache.ignite.ml.optimization.LossFunctions.L2
+        elif loss == 'l1':
+            java_loss = gateway.jvm.org.apache.ignite.ml.optimization.LossFunctions.L1
+        elif loss == 'hinge':
+            java_loss = gateway.jvm.org.apache.ignite.ml.optimization.LossFunctions.HINGE
+        else:
+            raise Exception('Unknown loss: %s' % loss)
+
+        proxy = gateway.jvm.org.apache.ignite.ml.python.PythonMLPDatasetTrainer(arch.proxy, java_loss, learning_rate, max_iter, batch_size, loc_iter, seed)
+        RegressionTrainer.__init__(self, proxy, True)
