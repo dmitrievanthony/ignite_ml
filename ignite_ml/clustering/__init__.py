@@ -20,6 +20,7 @@ import numpy as np
 
 from ..common import UnsupervisedTrainer
 from ..common import Proxy
+from ..common import Utils
 from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
@@ -44,19 +45,22 @@ class ClusteringModel(Proxy):
         X : Features.
         """
         X = np.array(X)
-        if len(X.shape) == 1:
-            return self.__predict(X)
-        elif len(X.shape) == 2:
-            return [self.__predict(x) for x in X]
+
+        if X.ndim == 1:
+            X = X.reshape(X.shape[0], 1)           
+        elif X.ndim > 2:
+            raise Exception("X has unexpected dimension [dim=%d]" % X.ndim)
+
+        predictions = np.array([self.__predict(x) for x in X])
+        if predictions.ndim == 2 and predictions.shape[1] == 1:
+            predictions = np.hstack(predictions)
+
+        return predictions
 
     def __predict(self, X):
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
-        java_array = gateway.new_array(gateway.jvm.double, len(X))
-        for i in range(len(X)):
-            if X[i] is not None:
-                java_array[i] = float(X[i])
-            else:
-                java_array[i] = float('NaN')
+        java_array = Utils.java_double_array(X)
+
         return self.proxy.predict(java_vector_utils.of(java_array))
 
 class ClusteringTrainer(UnsupervisedTrainer, Proxy):
@@ -68,15 +72,8 @@ class ClusteringTrainer(UnsupervisedTrainer, Proxy):
         Proxy.__init__(self, proxy)
 
     def fit(self, X, preprocessing=None):
-        X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
-        y_java = gateway.new_array(gateway.jvm.double, len(X))
-
-        for i in range(len(X)):
-            for j in range(len(X[i])):
-                if X[i][j] is not None:
-                    X_java[i][j] = float(X[i][j])
-                else:
-                    X_java[i][j] = float('NaN')
+        X_java = Utils.java_double_array(X)
+        y_java = Utils.java_double_array(np.zeros(X.shape[0]))
 
         java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessing))
 
@@ -86,8 +83,8 @@ class GMMClusteringTrainer(ClusteringTrainer):
     """GMM clustring trainer.
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(), eps=1e-3, count_of_components=2,
-                 max_iter=10, initial_means=None, max_count_of_init_tries=3, max_count_of_clusters=2,
-                 max_likelihood_divirgence=5.0, min_elements_for_new_cluster=300, min_cluster_probability=0.05):
+                 max_iter=10, max_count_of_init_tries=3, max_count_of_clusters=2, max_likelihood_divirgence=5.0,
+                 min_elements_for_new_cluster=300, min_cluster_probability=0.05):
         """Constructs a new instance of GMM clustring trainer.
 
         Parameters
@@ -95,7 +92,6 @@ class GMMClusteringTrainer(ClusteringTrainer):
         env_builder : Environment builder.
         count_of_components : Count of components.
         max_iter : Max number of iterations.
-        initial_means : Initial means.
         max_count_of_init_tries : Max count of init tries.
         max_count_of_clusters : Max count of clusters.
         max_likelihood_divirgence : Max likelihood divirgence.
@@ -105,7 +101,6 @@ class GMMClusteringTrainer(ClusteringTrainer):
         proxy = gateway.jvm.org.apache.ignite.ml.clustering.gmm.GmmTrainer()
         proxy.withEnvironmentBuilder(Proxy.proxy_or_none(env_builder))
         proxy.withInitialCountOfComponents(count_of_components)
-        #proxy.withInitialMeans(initial_means)
         proxy.withMaxCountIterations(max_iter)
         proxy.withEps(eps)
         proxy.withMaxCountOfInitTries(max_count_of_init_tries)

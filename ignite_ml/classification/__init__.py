@@ -20,6 +20,7 @@ import numpy as np
 
 from ..common import SupervisedTrainer
 from ..common import Proxy
+from ..common import Utils
 from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
@@ -44,19 +45,21 @@ class ClassificationModel(Proxy):
         X : Features.
         """
         X = np.array(X)
-        if len(X.shape) == 1:
-            return self.__predict(X)
-        elif len(X.shape) == 2:
-            return [self.__predict(x) for x in X]
+
+        if X.ndim == 1:
+            X = X.reshape(X.shape[0], 1)
+        elif X.ndim > 2:
+            raise Exception("X has unexpected dimension [dim=%d]" % X.ndim)
+
+        predictions = np.array([self.__predict(x) for x in X])
+        if predictions.ndim == 2 and predictions.shape[1] == 1:
+            predictions = np.hstack(predictions)
+
+        return predictions
 
     def __predict(self, X):
+        java_array = Utils.java_double_array(X)
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
-        java_array = gateway.new_array(gateway.jvm.double, len(X))
-        for i in range(len(X)):
-            if X[i] is not None:
-                java_array[i] = float(X[i])
-            else:
-                java_array[i] = float('NaN')
         return self.proxy.predict(java_vector_utils.of(java_array))
 
 class ClassificationTrainer(SupervisedTrainer, Proxy):
@@ -68,19 +71,8 @@ class ClassificationTrainer(SupervisedTrainer, Proxy):
         Proxy.__init__(self, proxy)
 
     def fit(self, X, y, preprocessor=None):
-        X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
-        y_java = gateway.new_array(gateway.jvm.double, len(y))
-
-        for i in range(len(X)):
-            for j in range(len(X[i])):
-                if X[i][j] is not None:
-                    X_java[i][j] = float(X[i][j])
-                else:
-                    X_java[i][j] = float('NaN')
-            if y[i] is not None:
-                y_java[i] = float(y[i])
-            else:
-                y_java[i] = float('NaN')
+        X_java = Utils.java_double_array(X)
+        y_java = Utils.java_double_array(y)
 
         java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
 
@@ -162,8 +154,7 @@ class LogRegClassificationTrainer(ClassificationTrainer):
     """LogisticRegression classification trainer.
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(), max_iter=100,
-                 batch_size=100, max_loc_iter=100, update_strategy=None,
-                 seed=1234):
+                 batch_size=100, max_loc_iter=100, seed=1234):
         """Constructs a new instance of LogisticRegression classification trainer.
 
         Parameters
@@ -182,8 +173,8 @@ class LogRegClassificationTrainer(ClassificationTrainer):
         proxy.withMaxIterations(max_iter)
         proxy.withBatchSize(batch_size)
         proxy.withLocIterations(max_loc_iter)
-        #proxy.withUpdatesStgy(update_strategy)
-        proxy.withSeed(seed)
+        if seed is not None:
+            proxy.withSeed(seed)
 
         ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 
@@ -192,8 +183,7 @@ class RandomForestClassificationTrainer(ClassificationTrainer):
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(),
                  trees=1, sub_sample_size=1.0, max_depth=5,
-                 min_impurity_delta=0.0, features_count_selection_strategy=None,
-                 nodes_to_learn_selection_strategy=None, seed=None):
+                 min_impurity_delta=0.0, seed=None):
         """Constructs a new instance of RandomForest classification trainer.
 
         Parameters
@@ -203,19 +193,14 @@ class RandomForestClassificationTrainer(ClassificationTrainer):
         sub_sample_size : Sub sample size.
         max_depth : Max depth.
         min_impurity_delta : Min impurity delta.
-        features_count_selection_strategy : Features count selection strategy.
-        nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
         seed : Seed.
         """
-        #proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer()
-        #proxy.withEnvironmentBuilder(env_builder.proxy)
-        #proxy.withAmountOfTrees(trees)
-        #proxy.withSubSampleSize(subSampleSize)
-        #proxy.withMaxDepth(maxDepth)
-        #proxy.withMinImpurityDelta(minImpurityDelta)
-        #proxy.withFeatureCountSelectionStrategy(featureCountSelectionStrategy)
-        #proxy.withNodesToLearnSelectionStrategy(nodesToLearnSelectionStrategy)
-        #proxy.withSeed(seed)
+        self.env_builder = env_builder
+        self.trees = trees
+        self.sub_sample_size = sub_sample_size
+        self.max_depth = max_depth
+        self.min_impurity_delta = min_impurity_delta
+        self.seed = seed
 
         ClassificationTrainer.__init__(self, None)
 
@@ -226,30 +211,17 @@ class RandomForestClassificationTrainer(ClassificationTrainer):
             metas.add(meta)
 
         self.proxy = gateway.jvm.org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer(metas)
+        self.proxy.withEnvironmentBuilder(self.env_builder.proxy)
+        self.proxy.withAmountOfTrees(self.trees)
+        self.proxy.withSubSampleSize(self.sub_sample_size)
+        self.proxy.withMaxDepth(self.max_depth)
+        self.proxy.withMinImpurityDelta(self.min_impurity_delta)
+        if self.seed is not None:
+            self.proxy.withSeed(self.seed)
+
         self.proxy = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
 
         return super(RandomForestClassificationTrainer, self).fit(X, y)
-
-class MLPClassificationTrainer(ClassificationTrainer):
-    """MLP classification trainer.
-    """
-    def __init__(self, env_builder=LearningEnvironmentBuilder(), arch=None, loss=None,
-                 update_strategy=None, max_iter=None, batch_size=None, max_loc_iter=None, seed=None):
-        """Constructs a new instance of MLP classification trainer.
-
-        Parameters
-        ----------
-        env_builder : Environment builder.
-        arch : Architecture.
-        loss : Loss function.
-        update_strategy : Update strategy.
-        max_iter : Max number of iterations.
-        batch_size: Batch size.
-        max_loc_iter: Max number of local iterations.
-        seed : Seed.
-        """
-        ClassificationTrainer.__init__(self, None)
-        raise Exception("Not implemented")
 
 class SVMClassificationTrainer(ClassificationTrainer):
     """SVM classification trainer.
@@ -270,7 +242,8 @@ class SVMClassificationTrainer(ClassificationTrainer):
         proxy.withLambda(l)
         proxy.withAmountOfIterations(max_iter)
         proxy.withAmountOfLocIterations(max_local_iter)
-        proxy.withSeed(seed)
+        if seed is not None:
+            proxy.withSeed(seed)
 
         ClassificationTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(proxy))
 

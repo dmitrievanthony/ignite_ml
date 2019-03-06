@@ -20,6 +20,7 @@ import numpy as np
 
 from ..common import SupervisedTrainer
 from ..common import Proxy
+from ..common import Utils
 from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
@@ -47,51 +48,86 @@ class RegressionModel(Proxy):
         X : Features.
         """
         X = np.array(X)
-        if len(X.shape) == 1:
-            return self.__predict(X)
-        elif len(X.shape) == 2:
-            return [self.__predict(x) for x in X]
 
-    def __predict(self, X):
-        java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
-        java_array = gateway.new_array(gateway.jvm.double, len(X))
-        for i in range(len(X)):
-            if X[i] is not None:
-                java_array[i] = float(X[i])
-            else:
-                java_array[i] = float('NaN')
+        if X.ndim == 1:
+            X = X.reshape(X.shape[0], 1)
+        elif X.ndim > 2:
+            raise Exception("X has unexpected dimension [dim=%d]" % X.ndim)
+
+        # Check if model accepts multiple objects for inference.
         if self.accepts_matrix:
-            return self.proxy.predict(java_vector_utils.of(java_array).toMatrix(True)).get(0, 0)
+            java_array = Utils.java_double_array(X)
+            java_matrix = gateway.jvm.org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix(java_array)
+            # Check if model is a single model or model-per-label.
+            if isinstance(self.proxy, list):
+                predictions = np.array([mdl.predict(java_matrix) for mdl in self.proxy])
+            else:
+                res = self.proxy.predict(java_matrix)
+                rows = res.rowSize()
+                cols = res.columnSize()
+                predictions = np.zeros((rows, cols))
+                for i in range(rows):
+                    for j in range(cols):
+                        predictions[i, j] = res.get(i, j)
         else:
-            return self.proxy.predict(java_vector_utils.of(java_array))
+            predictions = []
+            for i in range(X.shape[0]):
+                java_array = Utils.java_double_array(X[i])
+                java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
+                # Check if model is a single model or model-per-label.
+                if isinstance(self.proxy, list):
+                    prediction = [mdl.predict(java_vector_utils.of(java_array)) for mdl in self.proxy]
+                else:
+                    prediction = [self.proxy.predict(java_vector_utils.of(java_array))]
+                predictions.append(prediction)
+            predictions = np.array(predictions)
+
+        if predictions.ndim == 2 and predictions.shape[1] == 1:
+            predictions = np.hstack(predictions)
+
+        return predictions
 
 class RegressionTrainer(SupervisedTrainer, Proxy):
     """Regression.
     """
-    def __init__(self, proxy, accepts_matrix=False):
+    def __init__(self, proxy, multiple_labels=False, accepts_matrix=False):
         """Constructs a new instance of regression trainer.
         """
+        self.multiple_labels = multiple_labels
         self.accepts_matrix = accepts_matrix
         Proxy.__init__(self, proxy)
 
     def fit(self, X, y, preprocessor=None):
-        X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
-        y_java = gateway.new_array(gateway.jvm.double, len(y))
+        X = np.array(X)
+        y = np.array(y)
 
-        for i in range(len(X)):
-            for j in range(len(X[i])):
-                if X[i][j] is not None:
-                    X_java[i][j] = float(X[i][j])
-                else:
-                    X_java[i][j] = float('NaN')
-            if y[i] is not None:
-                y_java[i] = float(y[i])
-            else:
-                y_java[i] = float('NaN')
+        # Check dimensions: we expected to have 2-dim X and y arrays.
+        if X.ndim == 1:
+            X = X.reshape(X.shape[0], 1)
+        elif X.ndim > 2:
+            raise Exception("X has unexpected dimension [dim=%d]" % X.ndim)
 
-        java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
-    
-        return RegressionModel(java_model, self.accepts_matrix)
+        if y.ndim == 1:
+            y = y.reshape(y.shape[0], 1)
+        elif y.ndim > 2:
+            raise Exception("y has unexpected dimension [dim=%d]" % y.ndim)
+
+        X_java = Utils.java_double_array(X)
+
+        # We have two types of models: first type can accept multiple labels, second can't.
+        if self.multiple_labels:        
+            y_java = Utils.java_double_array(y)
+            java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
+            return RegressionModel(java_model, self.accepts_matrix)
+        else:
+            java_models = []
+            # Here we need to prepare a model for each y column.
+            for i in range(y.shape[1]):
+                y_java = Utils.java_double_array(y[:,i])
+                java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
+                java_models.append(java_model)
+            return RegressionModel(java_models, self.accepts_matrix)
+
 
 class DecisionTreeRegressionTrainer(RegressionTrainer):
     """DecisionTree regression trainer.
@@ -149,8 +185,7 @@ class RandomForestRegressionTrainer(RegressionTrainer):
     """
     def __init__(self, env_builder=LearningEnvironmentBuilder(),
                  trees=1, sub_sample_size=1.0, max_depth=5,
-                 min_impurity_delta=0.0, features_count_selection_strategy=None,
-                 nodes_to_learn_selection_strategy=None, seed=None):
+                 min_impurity_delta=0.0, seed=None):
         """Constructs a new instance of RandomForest classification trainer.
 
         Parameters
@@ -160,8 +195,6 @@ class RandomForestRegressionTrainer(RegressionTrainer):
         sub_sample_size : Sub sample size.
         max_depth : Max depth.
         min_impurity_delta : Min impurity delta.
-        features_count_selection_strategy : Features count selection strategy.
-        nodes_to_learn_selection_strategy : Nodes to learn selection strategy.
         seed : Seed.
         """
         self.env_builder = env_builder
@@ -169,8 +202,6 @@ class RandomForestRegressionTrainer(RegressionTrainer):
         self.sub_sample_size = sub_sample_size
         self.max_depth = max_depth
         self.min_impurity_delta = min_impurity_delta
-        self.features_count_selection_strategy = features_count_selection_strategy
-        self.nodes_to_learn_selection_strategy = nodes_to_learn_selection_strategy
         self.seed = seed
 
         RegressionTrainer.__init__(self, None)
@@ -187,9 +218,7 @@ class RandomForestRegressionTrainer(RegressionTrainer):
         self.proxy.withSubSampleSize(self.sub_sample_size)
         self.proxy.withMaxDepth(self.max_depth)
         self.proxy.withMinImpurityDelta(self.min_impurity_delta)
-        #self.proxy.withFeatureCountSelectionStrategy(self.feature_count_selection_strategy)
-        #self.proxy.withNodesToLearnSelectionStrategy(self.nodes_to_learn_selection_strategy)
-        if self.seed:
+        if self.seed is not None:
             self.proxy.withSeed(self.seed)
 
         self.proxy = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
@@ -229,4 +258,4 @@ class MLPRegressionTrainer(RegressionTrainer):
             raise Exception('Unknown loss: %s' % loss)
 
         proxy = gateway.jvm.org.apache.ignite.ml.python.PythonMLPDatasetTrainer(arch.proxy, java_loss, learning_rate, max_iter, batch_size, loc_iter, seed)
-        RegressionTrainer.__init__(self, proxy, True)
+        RegressionTrainer.__init__(self, proxy, True, True)

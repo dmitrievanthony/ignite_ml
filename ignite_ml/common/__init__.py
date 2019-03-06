@@ -39,6 +39,25 @@ classpath = ':'.join(libs_jar + optional_libs_jar)
 
 gateway = JavaGateway.launch_gateway(classpath=classpath, die_on_exit=True)
 
+class Utils:
+    def java_double_array(array):
+        java_array = gateway.new_array(gateway.jvm.double, *array.shape)
+        Utils.__java_double_array_backtrack(array, java_array)
+        return java_array
+
+    def __java_double_array_backtrack(array, java_array):
+        if array.ndim == 0:
+            raise Exception("Array is scalar [dim=%d]" % array.ndim)
+
+        for i in range(array.shape[0]):
+            if array.ndim == 1:
+                if array[i] is not None:
+                    java_array[i] = float(array[i])
+                else:
+                    java_array[i] = float('NaN')
+            else:
+                Utils.__java_double_array_backtrack(array[i], java_array[i])
+
 class Proxy:
     """Proxy class for Java object.
     """
