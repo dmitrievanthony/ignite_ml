@@ -17,7 +17,6 @@ import unittest
 
 from sklearn.metrics import r2_score
 from sklearn.datasets import make_regression
-from sklearn.model_selection import train_test_split
 
 from ignite_ml.regression import LinearRegressionTrainer
 from ignite_ml.regression import DecisionTreeRegressionTrainer
