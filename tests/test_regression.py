@@ -106,7 +106,6 @@ class TestRegressions(unittest.TestCase):
 
     def __generate_dataset(self):
         x, y = make_regression(random_state=42, n_features=20, n_informative=10, n_samples=100)
-        #return train_test_split(x, y, random_state=42)
         return (x, x, y, y)
 
 if __name__ == '__main__':
