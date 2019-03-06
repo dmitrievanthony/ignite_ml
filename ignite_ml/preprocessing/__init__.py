@@ -59,6 +59,10 @@ class PreprocessingTrainer(UnsupervisedTrainer):
     """
     def __init__(self, proxy):
         """Constructs a new instance of PreprocessingTrainer.
+
+        Parameters
+        ----------
+        proxy : Java proxy.
         """
         Proxy.__init__(self, proxy)
 
@@ -103,6 +107,36 @@ class BinarizationTrainer(PreprocessingTrainer):
 
         PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
 
+class EncoderPreprocessingModel(PreprocessingModel):
+    """Encoder preprocessing model.
+    """
+    def __init__(self, proxy):
+        """Constructs a new instance of encoder preprocessing model.
+        """
+        PreprocessingModel.__init__(self, proxy)
+
+    def transform(self, X):
+        X = np.array(X)
+
+        if X.ndim == 1:
+            X = X.reshape(X.shape[0], 1)
+        elif X.ndim > 2:
+            raise Exception("X has unexpected dimension [dim=%d]" % X.ndim)
+
+        transformations = np.array([self.__transform(x) for x in X])
+        if transformations.ndim == 2 and transformations.shape[1] == 1:
+            transformations = np.hstack(transformations)
+
+        return transformations
+
+    def __transform(self, X):
+        java_array = gateway.new_array(gateway.jvm.java.lang.Object, X.shape[0])
+        for i in range(X.shape[0]):
+            java_array[i] = gateway.jvm.java.lang.Double(float(X[i]))
+
+        res = self.proxy.apply(0, java_array)
+        return [res.get(i) for i in range(res.size())]
+
 class EncoderTrainer(PreprocessingTrainer):
     """Encoder trainer.
     """
@@ -139,7 +173,13 @@ class EncoderTrainer(PreprocessingTrainer):
             raise Exception("Unknown encoder type: %s" % encoder_type)
         proxy.withEncoderType(java_encoder_type)
 
-        PreprocessingTrainer.__init__(self, gateway.jvm.org.apache.ignite.ml.python.PythonPreprocessingTrainer(proxy))
+        self.proxy = gateway.jvm.org.apache.ignite.ml.python.PythonEncoderPreprocessingTrainer(proxy)
+
+    def fit(self, X, preprocessing=None):
+        X_java = Utils.java_double_array(X)
+        java_model = self.proxy.fit(X_java)
+
+        return EncoderPreprocessingModel(java_model)
 
 class ImputerTrainer(PreprocessingTrainer):
     """Imputer trainer.
