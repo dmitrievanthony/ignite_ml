@@ -20,6 +20,7 @@ from abc import abstractmethod
 from py4j.java_gateway import JavaGateway
 
 import os
+import numpy as np
 from py4j.java_gateway import JavaGateway
 
 ignite_home = os.environ['IGNITE_HOME']
@@ -41,6 +42,7 @@ gateway = JavaGateway.launch_gateway(classpath=classpath, die_on_exit=True)
 
 class Utils:
     def java_double_array(array):
+        array = np.array(array)
         java_array = gateway.new_array(gateway.jvm.double, *array.shape)
         Utils.__java_double_array_backtrack(array, java_array)
         return java_array

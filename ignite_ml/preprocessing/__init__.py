@@ -20,6 +20,7 @@ import numpy as np
 
 from ..common import UnsupervisedTrainer
 from ..common import Proxy
+from ..common import Utils
 from ..common import LearningEnvironmentBuilder
 
 from ..common import gateway
@@ -34,21 +35,23 @@ class PreprocessingModel(Proxy):
 
     def transform(self, X):
         X = np.array(X)
-        if len(X.shape) == 1:
-            return self.__transform(X)
-        elif len(X.shape) == 2:
-            return np.array([self.__transform(x) for x in X])
+
+        if X.ndim == 1:
+            X = X.reshape(X.shape[0], 1)
+        elif X.ndim > 2:
+            raise Exception("X has unexpected dimension [dim=%d]" % X.ndim)
+
+        transformations = np.array([self.__transform(x) for x in X])
+        if transformations.ndim == 2 and transformations.shape[1] == 1:
+            transformations = np.hstack(transformations)
+
+        return transformations
 
     def __transform(self, X):
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
-        java_array = gateway.new_array(gateway.jvm.double, len(X))
-        for i in range(len(X)):
-            if X[i] is not None:
-                java_array[i] = float(X[i])
-            else:
-                java_array[i] = float('NaN')
+        java_array = Utils.java_double_array(X)
         res = self.proxy.apply(0, java_vector_utils.of(java_array))
-        return np.array([res.get(i) for i in range(res.size())])
+        return [res.get(i) for i in range(res.size())]
 
 
 class PreprocessingTrainer(UnsupervisedTrainer):
@@ -60,15 +63,7 @@ class PreprocessingTrainer(UnsupervisedTrainer):
         Proxy.__init__(self, proxy)
 
     def fit(self, X, preprocessing=None):
-        X_java = gateway.new_array(gateway.jvm.double, len(X), len(X[0]))
-
-        for i in range(len(X)):
-            for j in range(len(X[i])):
-                if X[i][j] is not None:
-                    X_java[i][j] = float(X[i][j])
-                else:
-                    X_java[i][j] = float('NaN')
-
+        X_java = Utils.java_double_array(X)
         java_model = self.proxy.fit(X_java, preprocessing)
 
         return PreprocessingModel(java_model)
