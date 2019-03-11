@@ -59,7 +59,7 @@ class ClusteringModel(Proxy):
 
     def __predict(self, X):
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
-        java_array = Utils.java_double_array(X)
+        java_array = Utils.to_java_double_array(X)
 
         return self.proxy.predict(java_vector_utils.of(java_array))
 
@@ -72,8 +72,8 @@ class ClusteringTrainer(UnsupervisedTrainer, Proxy):
         Proxy.__init__(self, proxy)
 
     def fit(self, X, preprocessing=None):
-        X_java = Utils.java_double_array(X)
-        y_java = Utils.java_double_array(np.zeros(X.shape[0]))
+        X_java = Utils.to_java_double_array(X)
+        y_java = Utils.to_java_double_array(np.zeros(X.shape[0]))
 
         java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessing))
 

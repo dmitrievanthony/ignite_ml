@@ -58,7 +58,7 @@ class ClassificationModel(Proxy):
         return predictions
 
     def __predict(self, X):
-        java_array = Utils.java_double_array(X)
+        java_array = Utils.to_java_double_array(X)
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
         return self.proxy.predict(java_vector_utils.of(java_array))
 
@@ -71,10 +71,15 @@ class ClassificationTrainer(SupervisedTrainer, Proxy):
         Proxy.__init__(self, proxy)
 
     def fit(self, X, y, preprocessor=None):
-        X_java = Utils.java_double_array(X)
-        y_java = Utils.java_double_array(y)
+        X_java = Utils.to_java_double_array(X)
+        y_java = Utils.to_java_double_array(y)
 
         java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessor))
+
+        return ClassificationModel(java_model)
+
+    def fit_on_cache(self, cache, preprocessor=None):
+        java_model = self.proxy.fitOnCache(cache.proxy, Proxy.proxy_or_none(preprocessor))
 
         return ClassificationModel(java_model)
 

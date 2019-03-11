@@ -28,7 +28,11 @@ ignite_home = os.environ['IGNITE_HOME']
 libs_jar = []
 for f in os.listdir(ignite_home + '/libs'):
     if f.endswith('.jar'):
-        libs_jar.append(ignite_home + '/libs/' + f)
+        libs_jar.append(ignite_home + '/libs/' + f)    
+    if os.path.isdir(ignite_home + '/libs/' + f):
+        for fi in os.listdir(ignite_home + '/libs/' + f):
+            if fi.endswith('.jar'):
+                libs_jar.append(ignite_home + '/libs/' + f + '/' + fi)
 
 optional_libs_jar = []
 for opt in os.listdir(ignite_home + '/libs/optional'):
@@ -41,13 +45,19 @@ classpath = ':'.join(libs_jar + optional_libs_jar)
 gateway = JavaGateway.launch_gateway(classpath=classpath, die_on_exit=True)
 
 class Utils:
-    def java_double_array(array):
+    def to_java_double_array(array):
         array = np.array(array)
         java_array = gateway.new_array(gateway.jvm.double, *array.shape)
-        Utils.__java_double_array_backtrack(array, java_array)
+        Utils.__to_java_double_array_backtrack(array, java_array)
         return java_array
 
-    def __java_double_array_backtrack(array, java_array):
+    def from_java_double_array(java_array):
+        array = np.zeros(len(java_array))
+        for i in range(len(java_array)):
+            array[i] = java_array[i]
+        return array
+
+    def __to_java_double_array_backtrack(array, java_array):
         if array.ndim == 0:
             raise Exception("Array is scalar [dim=%d]" % array.ndim)
 
@@ -58,7 +68,7 @@ class Utils:
                 else:
                     java_array[i] = float('NaN')
             else:
-                Utils.__java_double_array_backtrack(array[i], java_array[i])
+                Utils.__to_java_double_array_backtrack(array[i], java_array[i])
 
 class Proxy:
     """Proxy class for Java object.

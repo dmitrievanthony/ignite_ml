@@ -49,7 +49,7 @@ class PreprocessingModel(Proxy):
 
     def __transform(self, X):
         java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
-        java_array = Utils.java_double_array(X)
+        java_array = Utils.to_java_double_array(X)
         res = self.proxy.apply(0, java_vector_utils.of(java_array))
         return [res.get(i) for i in range(res.size())]
 
@@ -67,7 +67,7 @@ class PreprocessingTrainer(UnsupervisedTrainer):
         Proxy.__init__(self, proxy)
 
     def fit(self, X, preprocessing=None):
-        X_java = Utils.java_double_array(X)
+        X_java = Utils.to_java_double_array(X)
         java_model = self.proxy.fit(X_java, preprocessing)
 
         return PreprocessingModel(java_model)
@@ -176,7 +176,7 @@ class EncoderTrainer(PreprocessingTrainer):
         self.proxy = gateway.jvm.org.apache.ignite.ml.python.PythonEncoderPreprocessingTrainer(proxy)
 
     def fit(self, X, preprocessing=None):
-        X_java = Utils.java_double_array(X)
+        X_java = Utils.to_java_double_array(X)
         java_model = self.proxy.fit(X_java)
 
         return EncoderPreprocessingModel(java_model)
