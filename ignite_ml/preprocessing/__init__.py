@@ -48,9 +48,8 @@ class PreprocessingModel(Proxy):
         return transformations
 
     def __transform(self, X):
-        java_vector_utils = gateway.jvm.org.apache.ignite.ml.math.primitives.vector.VectorUtils
         java_array = Utils.to_java_double_array(X)
-        res = self.proxy.apply(0, java_vector_utils.of(java_array))
+        res = self.proxy.apply(0, java_array)
         return [res.get(i) for i in range(res.size())]
 
 
@@ -69,6 +68,11 @@ class PreprocessingTrainer(UnsupervisedTrainer):
     def fit(self, X, preprocessing=None):
         X_java = Utils.to_java_double_array(X)
         java_model = self.proxy.fit(X_java, preprocessing)
+
+        return PreprocessingModel(java_model)
+
+    def fit_on_cache(self, cache, preprocessing=None):
+        java_model = self.proxy.fitOnCache(cache.proxy, Proxy.proxy_or_none(preprocessing))
 
         return PreprocessingModel(java_model)
 

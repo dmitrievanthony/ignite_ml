@@ -63,6 +63,7 @@ class RegressionModel(Proxy):
                 predictions = np.array([mdl.predict(java_matrix) for mdl in self.proxy])
             else:
                 res = self.proxy.predict(java_matrix)
+                print("Rrr: " + str(type(res)) + " : " + str(res) + " : " + str(res.get(0, 0)))
                 rows = res.rowSize()
                 cols = res.columnSize()
                 predictions = np.zeros((rows, cols))
@@ -131,7 +132,7 @@ class RegressionTrainer(SupervisedTrainer, Proxy):
     def fit_on_cache(self, cache, preprocessor=None):
         java_model = self.proxy.fitOnCache(cache.proxy, Proxy.proxy_or_none(preprocessor))
 
-        return ClassificationModel(java_model)
+        return RegressionModel(java_model, self.accepts_matrix)
 
 
 class DecisionTreeRegressionTrainer(RegressionTrainer):
@@ -229,6 +230,9 @@ class RandomForestRegressionTrainer(RegressionTrainer):
         self.proxy = gateway.jvm.org.apache.ignite.ml.python.PythonDatasetTrainer(self.proxy)
 
         return super(RandomForestRegressionTrainer, self).fit(X, y)
+
+    def fit_on_cache(self, cache, preprocessor=None):
+        raise Exception("Not implemented")
 
 class MLPRegressionTrainer(RegressionTrainer):
     """MLP regression trainer.

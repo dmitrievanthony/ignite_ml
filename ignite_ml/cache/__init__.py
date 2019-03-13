@@ -27,9 +27,9 @@ class Ignition:
 
     __ignite = None
 
-    def ignite():
+    def ignite(cfg):
         if Ignition.__ignite is None:
-            java_ignite = gateway.jvm.org.apache.ignite.Ignition.start()
+            java_ignite = gateway.jvm.org.apache.ignite.Ignition.start(cfg)
             Ignition.__ignite = Ignite(java_ignite)
         return Ignition.__ignite
 

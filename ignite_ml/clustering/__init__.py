@@ -78,6 +78,11 @@ class ClusteringTrainer(UnsupervisedTrainer, Proxy):
         java_model = self.proxy.fit(X_java, y_java, Proxy.proxy_or_none(preprocessing))
 
         return ClusteringModel(java_model)
+    
+    def fit_on_cache(self, cache, preprocessor=None):
+        java_model = self.proxy.fitOnCache(cache.proxy, Proxy.proxy_or_none(preprocessor))
+
+        return ClusteringModel(java_model)
 
 class GMMClusteringTrainer(ClusteringTrainer):
     """GMM clustring trainer.
