@@ -63,7 +63,6 @@ class RegressionModel(Proxy):
                 predictions = np.array([mdl.predict(java_matrix) for mdl in self.proxy])
             else:
                 res = self.proxy.predict(java_matrix)
-                print("Rrr: " + str(type(res)) + " : " + str(res) + " : " + str(res.get(0, 0)))
                 rows = res.rowSize()
                 cols = res.columnSize()
                 predictions = np.zeros((rows, cols))
